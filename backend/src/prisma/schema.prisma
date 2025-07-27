@@ -1,0 +1,319 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  name      String?
+  avatar    String?
+  bio       String?
+  website   String?
+  location  String?
+  
+  // Auth
+  password  String
+  verified  Boolean  @default(false)
+  active    Boolean  @default(true)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  wallpapers Wallpaper[]
+  favorites  Favorite[]
+  downloads  Download[]
+  views      View[]
+  collections Collection[]
+  
+  @@map("users")
+}
+
+model Wallpaper {
+  id          String   @id @default(cuid())
+  externalId  String?  @unique // ID from external APIs
+  source      String   @default("internal") // unsplash, pexels, pixabay, internal
+  
+  // Basic Info
+  title       String?
+  description String?
+  altText     String?
+  
+  // URLs
+  urlSmall    String
+  urlRegular  String
+  urlFull     String
+  urlRaw      String?
+  
+  // Dimensions
+  width       Int
+  height      Int
+  aspectRatio Float?
+  
+  // Metadata
+  color       String?
+  blurHash    String?
+  fileSize    Int?
+  format      String   @default("jpg")
+  
+  // Stats
+  views       Int      @default(0)
+  downloads   Int      @default(0)
+  likes       Int      @default(0)
+  
+  // Status
+  featured    Boolean  @default(false)
+  premium     Boolean  @default(false)
+  active      Boolean  @default(true)
+  
+  // SEO
+  slug        String?  @unique
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  publishedAt DateTime?
+  
+  // Relations
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  
+  tags        WallpaperTag[]
+  favorites   Favorite[]
+  downloads   Download[]
+  views       View[]
+  collections CollectionWallpaper[]
+  
+  @@map("wallpapers")
+  @@index([source])
+  @@index([categoryId])
+  @@index([featured])
+  @@index([createdAt])
+  @@index([views])
+  @@index([downloads])
+}
+
+model Category {
+  id          String @id @default(cuid())
+  name        String @unique
+  slug        String @unique
+  description String?
+  icon        String?
+  color       String?
+  
+  // Status
+  active      Boolean @default(true)
+  featured    Boolean @default(false)
+  
+  // Stats
+  wallpaperCount Int @default(0)
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  wallpapers  Wallpaper[]
+  
+  @@map("categories")
+}
+
+model Tag {
+  id        String @id @default(cuid())
+  name      String @unique
+  slug      String @unique
+  
+  // Stats
+  wallpaperCount Int @default(0)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  wallpapers WallpaperTag[]
+  
+  @@map("tags")
+}
+
+model WallpaperTag {
+  wallpaperId String
+  tagId       String
+  
+  wallpaper   Wallpaper @relation(fields: [wallpaperId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  @@id([wallpaperId, tagId])
+  @@map("wallpaper_tags")
+}
+
+model Favorite {
+  id          String @id @default(cuid())
+  userId      String
+  wallpaperId String
+  
+  createdAt   DateTime @default(now())
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallpaper   Wallpaper @relation(fields: [wallpaperId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, wallpaperId])
+  @@map("favorites")
+}
+
+model Download {
+  id          String @id @default(cuid())
+  userId      String?
+  wallpaperId String
+  
+  // Download info
+  quality     String   @default("regular") // small, regular, full
+  userAgent   String?
+  ipAddress   String?
+  referer     String?
+  
+  createdAt   DateTime @default(now())
+  
+  user        User?     @relation(fields: [userId], references: [id])
+  wallpaper   Wallpaper @relation(fields: [wallpaperId], references: [id], onDelete: Cascade)
+  
+  @@map("downloads")
+  @@index([wallpaperId])
+  @@index([createdAt])
+}
+
+model View {
+  id          String @id @default(cuid())
+  userId      String?
+  wallpaperId String
+  
+  // View info
+  userAgent   String?
+  ipAddress   String?
+  referer     String?
+  duration    Int?     // seconds viewed
+  
+  createdAt   DateTime @default(now())
+  
+  user        User?     @relation(fields: [userId], references: [id])
+  wallpaper   Wallpaper @relation(fields: [wallpaperId], references: [id], onDelete: Cascade)
+  
+  @@map("views")
+  @@index([wallpaperId])
+  @@index([createdAt])
+}
+
+model Collection {
+  id          String @id @default(cuid())
+  name        String
+  description String?
+  slug        String @unique
+  
+  // Status
+  public      Boolean @default(true)
+  featured    Boolean @default(false)
+  
+  // Metadata
+  coverImage  String?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  wallpapers  CollectionWallpaper[]
+  
+  @@map("collections")
+}
+
+model CollectionWallpaper {
+  collectionId String
+  wallpaperId  String
+  order        Int     @default(0)
+  
+  createdAt    DateTime @default(now())
+  
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  wallpaper    Wallpaper  @relation(fields: [wallpaperId], references: [id], onDelete: Cascade)
+  
+  @@id([collectionId, wallpaperId])
+  @@map("collection_wallpapers")
+}
+
+model ApiKey {
+  id          String @id @default(cuid())
+  name        String
+  key         String @unique
+  
+  // Permissions
+  canRead     Boolean @default(true)
+  canWrite    Boolean @default(false)
+  canDelete   Boolean @default(false)
+  
+  // Rate limiting
+  rateLimit   Int     @default(1000) // requests per hour
+  
+  // Status
+  active      Boolean @default(true)
+  
+  // Usage stats
+  totalRequests Int @default(0)
+  lastUsedAt    DateTime?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expiresAt   DateTime?
+  
+  @@map("api_keys")
+}
+
+model SystemConfig {
+  id          String @id @default(cuid())
+  key         String @unique
+  value       String
+  description String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("system_config")
+}
+
+model CronJob {
+  id          String @id @default(cuid())
+  name        String @unique
+  schedule    String
+  command     String
+  
+  // Status
+  enabled     Boolean @default(true)
+  
+  // Stats
+  lastRun     DateTime?
+  nextRun     DateTime?
+  runCount    Int      @default(0)
+  errorCount  Int      @default(0)
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("cron_jobs")
+}
