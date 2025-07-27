@@ -78,7 +78,7 @@
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/your-username/wallpaperverse.git
+git clone https://github.com/Ly-yang/wallpaperverse.git
 cd wallpaperverse
 
 # 2. 配置环境变量
@@ -146,12 +146,12 @@ npm run dev
 
 **一键部署 (推荐)**:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/your-username/wallpaperverse/main/scripts/deploy.sh | bash
+curl -fsSL https://github.com/Ly-yang/WallpaperVerse/blob/main/deploy.sh | bash
 ```
 
 **Docker部署**:
 ```bash
-git clone https://github.com/your-username/wallpaperverse.git
+git clone https://github.com/Ly-yang/wallpaperverse.git
 cd wallpaperverse
 cp .env.example .env  # 配置API密钥
 docker-compose up -d
@@ -183,9 +183,6 @@ docker-compose up -d
 - API限流和防护
 - 全TypeScript类型安全
 
-项目已经生产就绪，包含完整的文档、部署脚本和监控系统。您可以直接使用这套代码搭建自己的壁纸平台，也可以根据需求进一步定制开发。
-
-需要API密钥才能完整运行，请访问 Unsplash、Pexels、Pixabay 官网申请免费API密钥。
 
 ## 🔑 API 密钥配置
 
